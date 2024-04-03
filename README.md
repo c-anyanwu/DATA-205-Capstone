@@ -28,39 +28,38 @@ Data Sets Used
 4. CDC English Proficiency by Census Tract Data (Querried from CDC Public Health Tracking Network)
 
 Part 1: Background
-    1. Why is this project important?
-    2. What do I hope to learn?
-    3. Where is my data coming from?
+1. Why is this project important?
+2. What do I hope to learn?
+3. where is my data coming from?
 
 
 Part 2: Exploratory Data Analysis 
-    1. Clean the data for further usage 
-    2. Create simple preliminary visualizations to get a sense of data (Bar plot, scatter plot)
-    3. State simple observations 
-    4. Alter research questions if necessary 
+1. Clean the data for further usage
+2. Create simple preliminary visualizations to get a sense of data (Bar plot, scatter plot)
+3. State simple observations
+4.  Alter research questions if necessary 
 
 
 Part 3: Data Products
-    1. Data Dashboard w/Tableau 
-      a. Find shapefile with census tracts for all USA and MD
-    2. Regression Modeling 
-    3. More complex visualization
+1. Data Dashboard w/Tableau
+2.     Find shapefile with census tracts for all USA and MD
+3. Regression Modeling
+4. More complex visualization
 
 
 Part 4: Results 
-    1. Analysis of linear model results
-    2. Walkthrough of data dashboard
-    3. walkthrough of complex visuals 
+1. Analysis of linear model results
+2. Walkthrough of data dashboard
+3. Walkthrough of complex visuals 
 
 
-Part 5: Result Applications/Conclusion
-      1. What can your county do with the data?
-      2. What can the broader US do with the data ?
+Par 5: Conclusion/Analysis
+1. What can your county do with the data?
+2. What can the broader US do with the data ?
 
-      w
 
 Part 6: Reflection
-      1. What could you have done better?
-      2. What do you hope to explore further?
-      3. Are there any other tools you should have used?
+1. What could you have done better?
+2. What do you hope to explore further?
+3. Are there any other tools you should have used?
     
