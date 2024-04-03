@@ -37,12 +37,12 @@ Part 2: Exploratory Data Analysis
 1. Clean the data for further usage
 2. Create simple preliminary visualizations to get a sense of data (Bar plot, scatter plot)
 3. State simple observations
-4.  Alter research questions if necessary 
+4. Alter research questions if necessary 
 
 
 Part 3: Data Products
 1. Data Dashboard w/Tableau
-2.     Find shapefile with census tracts for all USA and MD
+2. Find shapefile with census tracts for all USA and MD
 3. Regression Modeling
 4. More complex visualization
 
