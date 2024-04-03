@@ -1,0 +1,156 @@
+---
+title: "Data 205 EDA"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+setwd("/Users/blossomanyanwu/Documents/Data 205 Project")
+```
+
+```{r}
+countyexercise<-read_csv("exercisecounty.csv")
+internetaccess<-read_csv("internet.csv")
+housingage<-read_csv("1980housing.csv")
+usainternet<-read_csv("usainternet.csv")
+usahousing<-read_csv("countyhousing.csv")
+```
+
+```{r}
+# Merge USA internet data and USA Housing Data
+merged_data <- usainternet|>
+  left_join(usahousing, by = c(StateFIPS = "StateFIPS", State = "State", 
+                         CountyFIPS = "CountyFIPS",`Data Comment` = "Data Comment", '...9' = "...9", County = "County"))
+# Remove empty columns 
+merged_data <- merged_data %>%
+  select(-c('...9', 'Data Comment'))
+```
+
+# Subset DMV Data 
+```{r}
+# Subset data for all target states
+target_states <- c("District of Columbia", "Maryland", "Virginia")
+dmvdata <- merged_data[merged_data$State %in% target_states, ]
+```
+
+
+```{r}
+ggplot(countyexercise, aes(x = County, y = Value)) +
+  geom_bar(stat = "identity", fill = "skyblue") +  # Adjust bar color
+  labs(title = "Physical Inactivity Rates by County Type",
+       x = "County Type",
+       y = "% Physically Inactive", 
+       caption = "Source: CDC Public Health Tracking Network (accessed April 2, 2024)") +
+  theme_classic()  # One can adjust theme as desired
+```
+
+
+# Bar Plot of Region Internet Access
+```{r}
+ggplot(dmvdata, aes(x = County, y = Number)) +
+  geom_bar(stat = "identity", fill = "skyblue") +  # Adjust bar color
+  labs(title = "Internet",
+       x = "County",
+       y = "Number of Housing built prior to 1980", 
+       caption = "Source: CDC Public Health Tracking Network (accessed April 2, 2024)") +
+  theme_classic()  # One can adjust theme as desired
+```
+# Histogram of Households without Internet
+```{r}
+
+ggplot(dmvdata, aes(x = Number)) +
+  geom_histogram(bins = 30, color = "lightblue") +  # Adjust 'bins' for desired number of bars
+  labs(title = "Histogram of Income", x = "Income", y = "Frequency") +
+  theme_classic()
+```
+
+
+
+# Merge Housing Data and Internet Access data set (Operates as Community Design Data set)
+```{r}
+
+combined <- housingage|>
+  left_join(internetaccess, by = c(StateFIPS = "StateFIPS", State = "State", 
+                         CensusTract = "CensusTract", `Census Tract` = "Census Tract",`Data Comment` = "Data Comment"))
+```
+
+
+# Scatter Plot: Housing Built before 1980 and Internet Access
+```{r}
+### Does housing age impact technical infrastructure and access to tech?
+ggplot(combined, aes(x = Value.x, y = Value.y)) +
+ geom_point(size = 3) +  # Adjust point size and add color mapping (optional)
+  labs(title = "Housing Age and Internet Access",
+       x = "Percent of Housing Built Prior to 1980",
+       y = "Number of Households Without Intern Access") +
+  theme_classic()
+```
+```{r}
+usainternet<-read_csv("usainternet.csv")
+usahousing<-read_csv("countyhousing.csv")
+```
+
+
+# EDA Continued
+```{r}
+
+options(scipen = 999)
+ggplot(merged_data, aes(x = Number, y = Value.x)) +
+ geom_point(size = .5) +  # Adjust point size and add color mapping (optional)
+  labs(title = "Housing Age and Internet Access",
+       x = "Number of Housing Units Built before 1950",
+       y = "Number of Households Without Internet Access") +
+  theme_classic()
+```
+
+# Linear Model of All USA Counties
+```{r}
+
+model <- lm(Number ~ Value.x, data = merged_data)  # y ~ x represents dependent variable ~ independent
+summary(model)
+```
+# Scatter Plot of Singular Region (DMV)
+```{r}
+
+# Create the scatter plot
+ggplot(dmvdata, aes(x = Number, y = Value.x)) +
+  geom_point(color = "blue", alpha = 0.5) +  # Adjust color and transparency as desired
+  labs(title = paste0("Scatter Plot for DC, MD, VA:"),
+       x = "Number of Households without Internet Access", y = "Number of Housing Units built before 1980") +  # Customize axis labels
+  theme_classic()  # Adjust theme (optional)
+```
+# Linear Model of One Region (DMV)
+```{r}
+model2 <- lm(Number ~ Value.x, data = dmvdata)  # y ~ x represents dependent variable ~ independent
+summary(model2)
+```
+# Maryland Specific Analysis 
+```{r}
+target_county <- "Maryland"
+
+# Subset data for the target county
+state_data <- merged_data[merged_data$State == target_county, ]
+
+# Create a state specific scatter plot 
+ggplot(state_data, aes(x = Number, y = Value.x)) +
+  geom_point(color = "blue", alpha = 0.5) +  # Adjust color and transparency as desired
+  labs(title = paste0("Scatter Plot for Maryland:"),
+       x = "Number of Housing Units built before 1980", y = "Number of Households without Internet Access") +
+  theme_minimal()
+```
+
+
+
+# Notes: Models and visualization have established a significant positive linear correlation between number of housing units built prior to 1980 and number of housholds without intern access. Now one can move towards exploring how this situation impact people living nearby by. The chosen health focuses are Access to Food, Mental Health, and Obesity
+
+
+
+
+
+
+
+
+
+
+
