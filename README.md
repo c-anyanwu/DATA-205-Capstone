@@ -1,4 +1,4 @@
-# DATA-205-Capstone: A Data Science Exploration of Community Design/Infrastructure and Public Health Outcomes
+# DATA-205-Capstone: A Data Science Exploration of Community Design/Infrastructure and Outcomes
 Workspace for DATA 205 Capstone Project
 Topics: Public Health and Community Infrastructure
 
