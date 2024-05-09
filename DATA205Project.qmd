@@ -399,6 +399,77 @@ map <- leaflet (moco_mapping) |>
 print(map)
 ```
 
-Overlay with internet lack rates map on Tablaeu (put final link here) and add interactivity
 
-Summary 1. Does it Impact x 2. Does it impact y 3. Does it impact z 4. Implications/What Comes Next
+
+
+
+
+```{r}
+pal<-colorNumeric("virdis",
+                  domain = moco_mapping$internetlackrate)
+
+moco_wifimaps$Long <- as.numeric(moco_wifimaps$Long)
+
+moco_wifimaps <- moco_wifimaps %>% filter(!is.na(Long))
+my_sf <- st_as_sf(moco_wifimaps, coords = c('Long', 'Lat'))
+
+# Create the Leaflet map
+map2 <- leaflet (moco_wifimaps) |>
+  addProviderTiles("Esri.NatGeoWorldMap") |># Add basemap tiles
+  setView(lng = -77.2405, lat = 39.1547, zoom = 10)|>
+  addMarkers(
+ data = moco_wifimaps,
+ label = ~moco_wifimaps$`Computers Available`)|>
+  addPolygons(
+    data = moco_mapping$geometry)
+# chlorppleth map with leaflet + R
+  # get ploygon data + import + geojeson format
+# create a function to deal with multipolygon
+  # change 
+print(map2)
+```
+
+
+```{r}
+map3 <- leaflet (filtered_data2) |>
+  addProviderTiles("Esri.NatGeoWorldMap") |># Add basemap tiles
+  setView(lng = -77.2405, lat = 39.1547, zoom = 10)|>
+  addMarkers(
+ data = filtered_data2,
+ label = ~filtered_data2$Name)
+print(map3)
+```
+
+
+# Internet Locations Bar Graph
+```{r}
+agency_counts <- moco_wifimaps %>%
+  count(Department)  
+
+ggplot(agency_counts, aes(x = Department, y = n)) +
+  geom_bar(stat = "identity", color = "orange") +  
+  labs(title = "Agency Name vs. Number of WiFi Spots",
+       x = "Agency Name",
+       y = "Number of Goverment Wifi Locations") +
+  # Chnage angle to 25 (math 217 code)
+  theme_classic() +
+theme(axis.text.x = element_text(angle = 45)) # Optional: adjust plot aesthetics
+```
+
+
+
+```{r}
+computers2 <- moco_wifimaps %>%
+  count(`Computers Available`) 
+
+
+ggplot(computers2, aes(x = computers2$`Computers Available`, y = n)) +
+  geom_bar(stat = "identity") +  
+  labs(title = "Computer Availability",
+       x = "Computer Availability",
+       y = "Number of Locations")
+  # Chnage angle to 25 (math 217 code)
+  theme_classic()
+```
+
+
