@@ -26,6 +26,7 @@ Data Sets Used
 2. CDC Housing Units Built Before 1980 Data (Querried from CDC Public Health Tracking Network)
 3. CDC Public Health Outcomes Data (Querried from CDC Public Health Tracking Network)
 4. CDC English Proficiency by Census Tract Data (Querried from CDC Public Health Tracking Network)
+5. Data Montgomery Government Affiliated Wifi Dataset
 
 Part 1: Background
 1. Why is this project important?
@@ -41,10 +42,9 @@ Part 2: Exploratory Data Analysis
 
 
 Part 3: Data Products
-1. Data Dashboard w/Tableau
-2. Find shapefile with census tracts for all USA and MD
+1. Leaflet Map
+2. Statistical Anlysis
 3. Regression Modeling
-4. More complex visualization
 
 
 Part 4: Results 
