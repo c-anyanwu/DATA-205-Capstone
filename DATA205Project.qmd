@@ -1,0 +1,404 @@
+---
+title: "DATA 205 Capstone: Impact of Community Design on Life Outcomes"
+format: html
+editor: visual
+---
+
+Introduction: The places we call home are more than just buildings and streets. Community design, the intentional (and sometimes unintentional) structuring of our environments plays a profound role in shaping our life outcomes. THis extends far beyond aesthetics, encompassing factors like demographics, infrastructure age, and even internet accessibility.
+
+This project aims to explore the relationship between two aspects of community design: energy burden and internet access and how they impact life outcome factors like: depression rates, mental health, english proficiency, and employment opportunities. These are all cornerstones of success, and soon the question arises: are individuals with limited internet access and a high energy burden disproportionately burdened by these challenges?
+
+The motivation behind this investigation is equity. By understanding how community design impacts people, we can work to create more balanced environments and develop solutions that help everyone.
+
+# Load Libraries
+
+```{r}
+library(ggridges)
+library(tidyverse)
+library(lubridate)
+library(corrplot)
+```
+
+# Set working directory and load datasets
+
+```{r}
+setwd("/Users/blossomanyanwu/Documents/Data 205 Project")
+english<-read_csv("englishpercent.csv")
+energyburden<-read_csv("percentenergyburden.csv")
+internetlack<-read_csv("percentnointernetaccess.csv")
+depressionrates<-read_csv("cruderatedepression.csv")
+wifi<-read_csv("mocowifi.csv")
+mentalhealthdays<-read_csv("crudebadmentalhealth.csv")
+unemployment<-read_csv("16oroldernoemployment.csv")
+```
+
+# General Cleaning
+
+```{r}
+unemployment <- unemployment[, !(names(unemployment) %in% "Data Comment")]
+unemployment <- unemployment[, !(names(unemployment) %in% "...8")] 
+
+depressionrates <- depressionrates[, !(names(depressionrates) %in% "Data Comment")]
+depressionrates <- depressionrates[, !(names(depressionrates) %in% "...11")] 
+
+english <- english[, !(names(english) %in% "Data Comment")]
+english <- english[, !(names(english) %in% "...8")] 
+
+internetlack <- internetlack[, !(names(internetlack) %in% "Data Comment")]
+internetlack <- internetlack[, !(names(internetlack) %in% "...9")] 
+
+mentalhealthdays <- mentalhealthdays[, !(names(mentalhealthdays) %in% "Data Comment")]
+mentalhealthdays <- mentalhealthdays[, !(names(mentalhealthdays) %in% "...11")] 
+
+
+energyburden <- energyburden[, !(names(energyburden) %in% "Data Comment")]
+energyburden <- energyburden[, !(names(energyburden) %in% "...8")] 
+```
+
+```{r}
+# Add Proper Year To Data
+# Explanation: When data was querried it was collected from a range 2018 to 2020. However for the sake of the analysis all other data sets querried were from the year 2020. I believe this does not negatively impact the integrity of the data. 
+energyburden <- energyburden %>%
+  mutate(Year = 2020)  # Add Year Column
+internetlack <- internetlack %>%
+  mutate(Year = 2020)  # Add Year Column
+```
+
+```{r}
+# Change Column Names and Merge Data Columns (Currently as querried from CDC columns are labled 'ValueX' or 'ValueY')
+
+depressionrates <- rename(depressionrates, depressrate = Value)
+energyburden <- rename(energyburden, energyburdenrate = Value) 
+english <- rename(english, englishrates = Value)
+# Percent of adults who report not speaking English Good
+internetlack <- rename(internetlack, internetlackrate = Value)
+# Percent of census tract where there is no internet in home
+mentalhealthdays <- rename(mentalhealthdays, badmental = Value)
+# Percent of people in area reporting over 7 bad mental health days
+unemployment <- rename(unemployment, percentunemployed = Value)
+# Percent of people over 18 reported unemployed/Percent unemployment
+```
+
+# Column Editing Continued
+
+```{r}
+# Chunk Explanation: The CDC Quierried Data has a column for 'Data Comments' and columns titled '...8', '...9', '...11' and so on. These columns are empty in all of the data I have querried and for the sake of merging the 6 data sets removing them makes the process easier. 
+internetlack <- select(internetlack, State, StateFIPS, CensusTract, `Census Tract`, internetlackrate, Year)
+
+# Chunk Explanation: This code removes the confidence interval data from the depressionrates and the mentalhealthdays data frames. This data was provided to the CDC through surveys and the confidence intervals shows how confident they are in applying it to a substantial population. The condfidence intervals for this data is relatively high so I felt comfortable using this data without analyzing that part. 
+
+mentalhealthdays <- select(mentalhealthdays, State, StateFIPS, CensusTract, `Census Tract`, badmental, Year)
+depressionrates <- select(depressionrates, State, StateFIPS, CensusTract, `Census Tract`, depressrate, Year)
+```
+
+# Data Set Merging
+
+```{r}
+# Chunk Explanation: Here I will merge all 6 cleaned data sets so that EDA can be started
+data_list <- list(depressionrates, energyburden, english, internetlack, mentalhealthdays, unemployment)
+
+# Merge all datasets sequentially based on "id" (all.x = TRUE for keeping all rows)
+merged_data <- reduce(data_list, function(x, y) merge(x, y, by = c("State", "CensusTract", "Census Tract", "Year", "StateFIPS"), all.x = TRUE))
+
+# View the final merged data frame
+print(merged_data)
+```
+
+# Remove Percents
+
+```{r}
+# Chunk Explanation: Here in this section I will remove the % in the values using Gsub. This is because when graphing and modeling the percents messed up the graphs. R was not registering the values as numeric and therefore all analysis was affected. Doing this does not compromise the integrity of the data. 
+
+# Remove "%" symbol using gsub
+merged_data$percentunemployed<- gsub("%", "", merged_data$percentunemployed)
+merged_data$depressrate <- gsub("%", "", merged_data$depressrate)
+merged_data$energyburdenrate <- gsub("%", "", merged_data$energyburdenrate)
+merged_data$englishrates <- gsub("%", "", merged_data$englishrates)
+merged_data$internetlackrate <- gsub("%", "", merged_data$internetlackrate)
+merged_data$badmental <- gsub("%", "", merged_data$badmental)
+### merged_data$percentunemployed <- gsub("%", "", merged_data$percentunemployed)
+# Convert the column to numeric (depending on later results)
+merged_data$percentunemployed <- as.numeric(merged_data$percentunemployed)
+merged_data$depressrate <- as.numeric(merged_data$depressrate)
+merged_data$energyburdenrate <- as.numeric(merged_data$energyburdenrate)
+merged_data$englishrates <- as.numeric(merged_data$englishrates)
+merged_data$internetlackrate <- as.numeric(merged_data$internetlackrate)
+merged_data$badmental <- as.numeric(merged_data$badmental)
+### merged_data$percentunemployed <- as.numeric(merged_data$percentunemployed)
+```
+
+# General Cleaning Description
+
+In this section I have renamed columns for clarity, added the appropriate years, and removed redundant and unneeded columns. This was all done to make the merging of the data sets and general analysis run more smoothly. I have ensured that this removal and editing of names does not compromise or take away from the data's integrity
+
+# Ascribe County To Each Observation
+
+```{r}
+# Define a dictionary to map starting codes to county names
+county_codes <- c('24001' = 'Allegheny', '24003' = 'Anne Arrundel', '24510' = 'Baltimore City','24005' = 'Baltimore', '24009' = 'Calvert', '24013' = 'Carroll', '24015' = 'Cecil', '24017' = 'Charles', '24019' = 'Dorchester', '24021' = 'Fredrick', '24023' = 'Garrett', '24025' = 'Harford', '24027' = 'Howard', '24031' = 'Montgomery', '24033' = 'P.G County', '24035' = 'Queen Anne','24039' = 'Somorsett','24037' = 'St. Mary','24041' = 'Talbot','24043' = 'Washington','24045' = 'Wicomico', '24047' = 'Worcestor', '24029' = 'Kent County')
+
+# Create a new column 'County' based on the starting 4 digits of 'CensusTract'
+merged_data$County <- sapply(merged_data$CensusTract, function(x) county_codes[substr(x, 1, 5)])
+
+# View the updated data frame
+print(data)
+```
+
+# EDA : Statewide Analysis
+
+Guiding Question: How is Montgomery County Performing In Comparison To Other Counties?
+
+How Do Community Factors Like Internet Access Relate to Employment And English Proficiency?
+
+# Visual 1: Crude Depression Rates Across Maryland Counties
+
+```{r}
+average_by_county <- merged_data %>%
+  group_by(County) %>%
+  summarize(Average = mean(depressrate))
+average_by_county <- average_by_county %>% filter(!is.na(Average))
+# Explanation: I removed the N/As and chose to focus on counties that possesed data substantial enough for analysis 
+
+# Create the bar graph
+ggplot(average_by_county, aes(x = County, y = Average, fill = County)) +
+  geom_bar(bins = 10, stat = "identity")+
+  labs(title = "Average of Crude Depression Rates by County", x = "County", y = "Average Value")
+```
+
+# Explanation: The bar graph shows that Montgomery County has among the lowest Crude Depression Rates Among Adults in Maryland. However, the data should also be explored on a county level.
+
+# Visual 2: Households Without Internet Across Counties
+
+```{r}
+merged_data <- merged_data[!is.na(merged_data$internetlackrate), ] 
+internet_by_county <- merged_data %>%
+  group_by(County) %>%
+  summarize(Average = mean(internetlackrate))
+# Create the bar graph
+ggplot(internet_by_county, aes(x = County, y = Average)) +
+  geom_bar(bins = 8, stat = "identity")+
+  labs(title = "Percent Of Population With No Home Internet", x = "County", y = "Average Value")
+```
+
+Explanation: Among all MD Counties Montgomery County has the lowest reported number of households with no internet access
+
+# Visual 3: Violin Plot for 3 Counties Internet Access (MoCo, PG, and Baltimore County)
+
+```{r}
+# Explanation: These 3 counties were selected for brief EDA for 2 major reasons. Montgomery County was selected because it is the county this project is centered around. PG County was then selected because it is in the center of median family income in MD as of 2020 and Baltimore County was towards the bottom of the list. Having these 3 counties that have differing median incomes could allow us to see the impact of finances on the data. 
+moco_bmore_pg_data <- merged_data[merged_data$County %in% c("Montgomery", "Baltimore", "P.G County","Howard"), ]
+ggplot(moco_bmore_pg_data, aes(x = County, y = internetlackrate, fill = County)) +
+  geom_violin(position = "dodge") +
+# Customize (optional)
+  labs(x = "County", y = "Internet Access", title = "Distribution of Internet Access by County") +
+  theme_bw()
+```
+
+# Visual 3B: Expanded Into Ridge Plot
+
+```{r}
+library(ggridges)
+ggplot(moco_bmore_pg_data, aes(x = internetlackrate, y = County, fill = County)) +
+  geom_density_ridges(scale = 1) +
+  geom_density_ridges_gradient(scale = 1.5, rel_min_height = 0.05)+
+  labs(title = 'Internet Access Ridge Plot [MoCo, PG, Baltimore]',
+       y = 'County',
+       x = 'Percent of Housholds Without Home Internet') 
+  theme_ridges() + 
+  theme(legend.position = "none")
+```
+
+Explanation: Compared to other counties Montgomery County seems to perform well in a lot of areas. Here we can see that when it comes to % of housholds in a given census tract without internet access Montgomery County has lower values compared to counties like Baltimore, and PG. However, Howard County has less households without internet access.
+
+# Data Product 1: Preliminary Statistical Analysis
+
+# Visual 4: Internet Access and English Proficiency Scatter Plot Across MD
+
+```{r}
+merged_data <- merged_data[!is.na(merged_data$englishrates), ] 
+ggplot(merged_data, aes(x = internetlackrate, y = englishrates, color = County)) +
+  geom_point() +
+  labs(x = "% No Internet Access", y = "Poor English Speaking Rate (%)", title = "Internet Access vs. English Speaking Rates")+
+    theme_bw()
+```
+
+# Visual 4B: Internet Access and English Profficiency Scatter Plot Across MD (Montgomery County, Howard County, PG County, Baltimore County)
+
+```{r}
+ggplot(moco_bmore_pg_data, aes(x = internetlackrate, y = englishrates)) +
+  geom_point() +  # Add points to represent data points
+  facet_wrap(~ County) +  # Separate plots by county
+  labs(x = "% No Internet Access", y = "% of Population Speaking Poor English", title = "Internet Access vs. English Speaking Rates (By County)") +
+  theme_bw()+
+  theme(strip.background =element_rect(fill="black"))+
+  theme(strip.text = element_text(colour = 'white'))
+```
+
+```{r}
+# Remove Percent in Employment Percents
+merged_data$percentunemployed <- gsub("%", "", merged_data$percentunemployed)
+merged_data <- merged_data[!is.na(merged_data$percentunemployed), ]
+merged_data$percentunemployed <- as.numeric(merged_data$percentunemployed)
+ggplot(merged_data, aes(x = internetlackrate, y = percentunemployed, color = County)) +
+  geom_point() +
+  labs(x = " Households With No Internet Access (%)", y = "Unemployment (%)", title = "Internet Access vs. Unemployment")
+```
+
+# Visual 5B: Internet Access and Employment Scatter Plot Across MD Core Counties (Montgomery County, Howard County, PG County, Baltimore County)
+
+```{r}
+ggplot(moco_bmore_pg_data, aes(x = internetlackrate, y = percentunemployed)) +
+  geom_point() +  # Add points to represent data points
+  facet_wrap(~ County) +  # Separate plots by county
+  labs(x = "% No Internet Access", y = "% Unemployment", title = "Internet Access vs. Unemployment (By County)") +
+  theme_bw()+
+  theme(strip.background =element_rect(fill="black"))+
+  theme(strip.text = element_text(colour = 'white'))
+```
+
+# Visual 6: Internet Access and Mental Health Across MD Core Counties
+
+```{r}
+ggplot(moco_bmore_pg_data, aes(x = internetlackrate, y = badmental)) +
+  geom_point() +  # Add points to represent data points
+  facet_wrap(~ County) +  # Separate plots by county
+  labs(x = "% No Internet Access", y = "% Reported 14+ Bad Mental Health Days", title = "Internet Access vs. Reported Bad Mental Health Days (By County)") +
+  theme_bw()+
+  theme(strip.background =element_rect(fill="black"))+
+  theme(strip.text = element_text(colour = 'white'))
+```
+
+# Visual 7: English Speaking and Mental Health
+
+```{r}
+ggplot(moco_bmore_pg_data, aes(x = internetlackrate, y = badmental)) +
+  geom_point() +  # Add points to represent data points
+  facet_wrap(~ County) +  # Separate plots by county
+  labs(x = "% No Home Internet", y = "% Reported 14+ Bad Mental Health Days", title = "English Proficiency vs. Reported Bad Mental Health Days (By County)") +
+  theme_bw()+
+  theme(strip.background =element_rect(fill="black"))+
+  theme(strip.text = element_text(colour = 'white'))
+```
+
+# Visual 8: Energy Burden and Internet Access Across MD Core Counties
+
+```{r}
+ggplot(moco_bmore_pg_data, aes(x = energyburdenrate, y = internetlackrate)) +
+  geom_point() +  # Add points to represent data points
+  facet_wrap(~ County) +  # Separate plots by county
+  labs(x = "% Energy Burden" , y = "% No Home Internet", title = "% Energy Burden (By County) Vs % No Home Internet vs. ") +
+  theme_bw()+
+  theme(strip.background =element_rect(fill="black"))+
+  theme(strip.text = element_text(colour = 'white'))
+# Definition: Energy Burden: Percent of Area's gross income spent on home energy costs (which includes internet costs)
+```
+
+EDA General Conclusions: Community design factors such as English Proficiency, % Energy Burden, and Internet Access Appear to have an impact on Life Outcomes such as: Employment, Depression Rates, and Poor Mental Health Days.
+
+# Guiding Questions:
+
+1.  How does energy burden impact one's access to health in Montgomery County?
+2.  Can we pinpoint locations in need of intervention, where the brunt of disparities are experienced the most?
+3.  Does energy burden have a significant impact on one's access to the internet?
+4.  What community design factor (Internet Access, Energy Burden, % With Poor English) impact personal outcomes (Employment, Depression, Mental Health) the most?
+
+# Data Product 2: In Depth Statistical Analysis on Montgomery County Variables
+
+Using Linear and Regression Models I will explore the extent of how these variables impact each other and work to create an efficient model for Montgomery County only. First I must subset the data set again to only include Montgomery County Variables.
+
+## MoCo Subset
+
+```{r}
+# Specify my target county
+target_county <- "Montgomery"
+
+# Subset the data for the target county
+moco_data <- merged_data %>%
+  filter(County == target_county)
+```
+
+# Model 1: Energy Burden And Internet Access (Does energy burden have a significant impact on one's access to the internet?)
+
+```{r}
+model1 <- lm(internetlackrate ~ energyburdenrate, data = moco_data)  # y ~ x represents dependent variable ~ independent
+summary(model1)
+```
+
+Model Analysis
+
+1.  Positive Relationship: The coefficient for energyburdenrate is positive (4.0189) and statistically significant (p-value \< 0.0001), indicating a positive association between energy burden rate and internet lack rate. As the energy burden rate increases, the internet lack rate also tends to increase.
+2.  Residuals: The minimum residual is -6.4568, the first quartile (Q1) is -2.3681, the median is -0.7955, the third quartile (Q3) is 1.7984, and the maximum residual is 12.4432. These values suggest that the model fits the data reasonably well, with most residuals falling within a moderate range around zero.
+3.  R-squared: The multiple R-squared (0.2335) indicates that the model explains approximately 23.35% of the variance in internet lack rate based on the energy burden rate. The adjusted R-squared (0.2296) takes into account the number of predictors (one in this case) and is slightly lower.
+4.  F-statistic: The F-statistic (59.1) and its highly significant p-value (0.00000000000073) further support the model's overall significance. There is strong evidence that the relationship between energy burden rate and internet lack rate is not due to chance.
+5.  Limitations: This model only considers one independent variable (energy burden rate). Other factors might influence internet lack rate, and including them could improve the model's explanatory power. R-squared (around 23%) suggests a moderate association, not a perfect fit. There might be unexplained variation in the data.
+
+Guided Question Answer: Yes, there is a significant relationship between the % Energy Burden and the % Household With No Internet Access. This essentially means that when the % Energy Burden is higher, indicating that energy takes up more of a census tract's median income, individuals are less likely to have home internet insurance. This is an issue internet access is a necessity in this current world. Through online connection individuals can apply for jobs and expand their education, leading them to earn increased income. But it seems like individuals who are from these high Energy Burden locations are at a disadvantage as internet is not accessible because of income. It is important to note that the r\^2 value is on the lower end so a better more accurate model can be created.
+
+# Model 2: Depression, Bad Mental Health Days, and Internet Access (How does energy burden and internet access impact one's access to health in Montgomery County?)
+
+```{r}
+# Interet + Energy Burden's impact on Unemployment
+model2 <- lm(percentunemployed ~ internetlackrate + energyburdenrate, data = moco_data)
+summary(model2)
+```
+
+```{r}
+# Load libraries (assuming 'pROC' is not already loaded)
+library(pROC)
+
+# Sample your data (replace with your actual sampling method)
+set.seed(123)  # Set a seed for reproducibility
+sample_size <- 0.7  # Adjust sample size as needed
+data_sampled <- sample(nrow(moco_data), size = nrow(moco_data) * sample_size)
+data_subset <- moco_data[data_sampled, ]
+```
+
+# Model 3: Employment and Internet Access+Energy Burden (Can we predict employment based on these factors?)
+
+```{r}
+
+```
+
+# Model Testing
+
+# Data Product 3: Leaflet Map of Locations With Accessible Internet Access (Among All County WiFi Spots)
+
+```{r}
+# Load required libraries
+library(tidycensus)
+library(tidyverse)
+library(sf)
+library(tigris)
+library(leaflet)
+```
+
+```{r}
+# Load Shapefile and Merge With County Data 
+library(tigris)
+moco_tracts <- tracts(state = "MD", county = "Montgomery")
+moco_mapping <- merge(moco_data, moco_tracts, by.x = "CensusTract", by.y = "GEOID")
+```
+
+```{r}
+# Rename columns
+moco_mapping <- rename(moco_mapping, lat = INTPTLAT)
+moco_mapping <- rename(moco_mapping, long = INTPTLON)
+# Convert columns to numeric from characters
+moco_mapping$lat <- as.numeric(moco_mapping$lat)
+moco_mapping$long <- as.numeric(moco_mapping$long)
+```
+
+```{r}
+# Create the Leaflet map
+map <- leaflet (moco_mapping) |>
+  addProviderTiles("Esri.NatGeoWorldMap") |># Add basemap tiles
+  setView(lng = -77.2405, lat = 39.1547, zoom = 10)|>
+  addCircles(
+ data = moco_mapping)
+# Set initial view (adjust as needed) 
+print(map)
+```
+
+Overlay with internet lack rates map on Tablaeu (put final link here) and add interactivity
+
+Summary 1. Does it Impact x 2. Does it impact y 3. Does it impact z 4. Implications/What Comes Next
