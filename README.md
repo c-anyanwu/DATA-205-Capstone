@@ -25,8 +25,13 @@ Data Sets Used
 1. CDC Internet Access Data (Querried from CDC Public Health Tracking Network)
 2. CDC Housing Units Built Before 1980 Data (Querried from CDC Public Health Tracking Network)
 3. CDC Public Health Outcomes Data (Querried from CDC Public Health Tracking Network)
-4. CDC English Proficiency by Census Tract Data (Querried from CDC Public Health Tracking Network)
-5. Data Montgomery Government Affiliated Wifi Dataset
+4. CDC English Speaking Rates by Census Tract Data (Querried from CDC Public Health Tracking Network)
+5. CDC Energy Burden Rates by Census Tract (Querried from CDC Public Health Tracking Network)
+6. CDC English Speaking Percents by Census Tract (Querried from CDC Public Health Tracking Network)
+7. Data Montgomery Government Affiliated Wifi Dataset
+
+Notes
+1. Data sets 1-6 were merged for this project. Code for merging is included in the QMD file attatched to repo
 
 Part 1: Background
 1. Why is this project important?
