@@ -47,9 +47,8 @@ Part 2: Exploratory Data Analysis
 
 
 Part 3: Data Products
-1. Leaflet Map
-2. Statistical Anlysis
-3. Regression Modeling
+1. Statistical Anlysis
+2. Regression Modeling
 
 
 Part 4: Results 
